@@ -21,7 +21,7 @@ class ProjetoController {
    */
 	async index({ auth, request }) {
 		const { id } = auth.user;
-		const projetos = await Projetos.query().where('user_id', id).fetch();
+		const projetos = await Projeto.query().where('user_id', id).fetch();
 		return projetos;
 	}
 
@@ -56,17 +56,6 @@ class ProjetoController {
 	}
 
 	/**
-   * Render a form to update an existing projeto.
-   * GET projetos/:id/edit
-   *
-   * @param {object} ctx
-   * @param {Request} ctx.request
-   * @param {Response} ctx.response
-   * @param {View} ctx.view
-   */
-	async edit({ params, request, response, view }) {}
-
-	/**
    * Update projeto details.
    * PUT or PATCH projetos/:id
    *
@@ -74,7 +63,17 @@ class ProjetoController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-	async update({ params, request, response }) {}
+	async update({ params, request, response }) {
+    const projeto = await Projeto.findOrFail(params.id);
+    const data = request.only([
+      "titulo",
+      "resumo"
+    ]);
+
+    projeto.merge(data);
+    await projeto.save();
+    return projeto;
+  }
 
 	/**
    * Delete a projeto with id.
@@ -84,7 +83,15 @@ class ProjetoController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-	async destroy({ params, request, response }) {}
+	async destroy({ params, auth, response }) {
+    const projeto = await Projeto.findOrFail(params.id);
+    if (
+      projeto.user_id !== auth.user.id
+    ) {
+      return response.status(401).send({ error: "Não autorizado" });
+    }
+    await projeto.delete();
+  }
 }
 
 module.exports = ProjetoController;
