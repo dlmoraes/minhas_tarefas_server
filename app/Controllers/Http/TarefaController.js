@@ -24,17 +24,12 @@ class TarefaController {
   async index({ auth, request }) {
     const { id } = auth.user;
     const tarefas = await Tarefa.query()
-      .with('atribuidor')
-      .with('evidencias')
-      .with('comentarios.user')
-      // .loadMany(["comentarios", "evidencias", "atribuidor"])
+      .with("atribuidor")
+      .with("evidencias")
+      .with("comentarios.user")
       .where("user_id", id)
       .orWhere("atribuido_por_id", id)
       .fetch();
-    // const tarefas = await Database.table("tarefas")
-    //   .innerJoin('users', 'tarefas.atribuido_por_id', 'users.id')
-    //   .where("user_id", id)
-    //   .orWhere("atribuido_por_id", id);
     return tarefas;
   }
 
@@ -52,6 +47,7 @@ class TarefaController {
       "atribuido_por_id",
       "titulo",
       "data_vencimento",
+      "data_fim",
       "finalizado",
       "bloqueado",
       "arquivado",
@@ -90,13 +86,20 @@ class TarefaController {
   async update({ params, request, response }) {
     const tarefa = await Tarefa.findOrFail(params.id);
     const data = request.only([
+      "atribuido_por_id",
       "titulo",
       "data_vencimento",
+      "data_fim",
       "finalizado",
       "bloqueado",
       "arquivado",
       "prioridade"
     ]);
+
+    data.finalizado = !!data.data_fim;
+    if (data.atribuido_por_id === undefined) {
+      data.atribuido_por_id = tarefa.user_id;
+    }
 
     tarefa.merge(data);
     await tarefa.save();
